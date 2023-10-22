@@ -1,0 +1,13 @@
+*.png
+*.pkl
+*.dat
+*.mod
+*.exe
+*.err
+*.aux
+*.bbl
+*.blg
+*.gz
+*.pyc
+
+build/
