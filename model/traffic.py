@@ -11,6 +11,20 @@ def Initialize_X(N):
         X[i] = state
     return X
 
+def Reassign_states(X):
+    new_X = {}
+    for key, state in X.items():
+        # 将state转为4位二进制字符串
+        binary_str = format(state, '04b')
+        new_values = []
+        for bit in binary_str:
+            value = random.uniform(0, 0.1)
+            if bit == '0':
+                value = -value
+            new_values.append(value)
+        new_X[key] = new_values
+    return new_X
+
 def Initialize_road_network_random(N):
     # 计算矩阵的大小
     side_length = int(N ** 0.5)
