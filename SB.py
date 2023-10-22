@@ -8,57 +8,65 @@ import copy
 import random
 import numpy as np
 
-def a(t):
-    # 这个函数应该根据时间t返回a的值
-    # 请提供具体的a(t)函数形式
-    return ...
+def ReassignSigmaValues(sigma):
+    """
+    If sigma values exceed 1 or go below -1, 
+    reassign them to random values between 0.1 and 0.3 or -0.3 and -0.1 respectively.
+    """
+    condition = np.abs(sigma) >= 1
+    sigma[condition & (sigma >= 1)] = np.random.uniform(0.1, 0.3)
+    sigma[condition & (sigma <= -1)] = np.random.uniform(-0.3, -0.1)
+    return sigma
 
-def q(j, i, x):
-    # 根据x返回q_{j,i}的值
-    # 请提供具体的q_{j,i}函数形式
-    return ...
+def UpdateSigma(bi_sigma, bi_sigma_last, bi_sigmat, t, L, a0, at):
+    """
+    Update bi_sigma values based on certain conditions and derivatives.
+    """
+    y = np.random.random(L)
+    x_d = np.zeros(L)
 
-def f(x, m):
-    # 请提供具体的f(x_i^{(c)}, m)函数形式
-    return ...
+    for i in range(L):
+        if abs(bi_sigma[i]) < 1:
+            y[i] -= ((a0 - at) * bi_sigma[i] + (HqDer(i, 1, bi_sigmat) + HdDer(bi_sigma[i], bi_sigma_last[i]) + HwDer(bi_sigmat[i], 1))) * t
+            x_d[i] = a0 * y[i]
+            bi_sigma[i] += x_d[i] * t
+            bi_sigma[i] = np.clip(bi_sigma[i], -1, 1)
+        else:
+            bi_sigma[i] = np.clip(bi_sigma[i], -1, 1)
+    return bi_sigma
 
-def SB_update(x, y, t, N, M, a0, mu, sigma, Hw):
-    dx = np.zeros_like(x)
-    dy = np.zeros_like(y)
+def BsbRefactored(bi_sigma, bi_sigma_last):
+    global bi_Sigma, bi_Sigma_last
 
-    for i in range(len(x)):
-        for c in range(4):
-            # 对x_i^{(c)}更新
-            dx[i][c] = a0 * y[i][c]
-            
-            # 对y_i^{(c)}更新
-            Ni = ...  # 你需要提供N_i的计算方式
-            sum_q = sum(q(j, i, x) for j in Ni)
-            sum_q_derivative = sum(...)  # 你需要提供对q_{j,i}的偏导数的计算方式
-            sum_q_derivative_times_q = sum(...)  # 你需要提供这一部分的计算方式
+    at = 0
+    sigma_lists = [bi_sigma[:, i] for i in range(4)]
+    sigma_last_lists = [bi_sigma_last[:, i] for i in range(4)]
+    
+    # Reassign sigma values that are out of range
+    sigma_lists = [ReassignSigmaValues(sigma) for sigma in sigma_lists]
+    bi_sigmat = Get4Bisigma(*sigma_lists)
 
-            # 将上面的各个部分整合到y_i^{(c)}的更新公式中
-            dy[i][c] = -(a0 - a(t)) * x[i][c] - ...  # 请根据您给出的方程完善这部分
+    Hlist.append(HTotal(Param1(dict1, dict2, dict3, bi_sigmat), Param2(bi_sigma_last, bi_sigmat)))
 
-    return dx, dy
+    for _ in range(iters):
+        for sigma, sigma_last in zip(sigma_lists, sigma_last_lists):
+            sigma = UpdateSigma(sigma, sigma_last, bi_sigmat, t, L, a0, at)
+            bi_sigmat = Get4Bisigma(*sigma_lists)
 
-# 演示如何使用SB_update函数更新x和y
-N = ...  # 你需要提供N的值
-M = ...  # 你需要提供M的值
-a0 = ...
-mu = ...
-sigma = ...
-Hw = ...
+        at += delta
 
-x = ...  # 初始x值
-y = ...  # 初始y值
-t = 0
+        Hamilton = HTotal(Param1(dict1, dict2, dict3, bi_sigmat), Param2(bi_sigma_last, bi_sigmat))
+        Hlist.append(Hamilton)
 
-dt = 0.01  # 时间步长
-for _ in range(1000):
-    dx, dy = SB_update(x, y, t, N, M, a0, mu, sigma, Hw)
-    x += dx * dt
-    y += dy * dt
-    t += dt
+    bi_sigmat = Normalize(bi_sigmat)
+    bi_sigmat, sigma8 = GetSigma8(bi_sigmat)
+    SigmaList.append(bi_sigmat)
+    sigma8List.append(sigma8)
+
+    HList.append(HTotal(Param1(dict1, dict2, dict3, bi_sigmat), Param2(bi_sigma_last, bi_sigmat)))
+
+    bi_Sigma_last = bi_sigmat
+    bi_Sigma = bi_sigmat
+
 
 
