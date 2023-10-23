@@ -1,29 +1,34 @@
 from . import global_Value as G
 
 import random
+import numpy as np
 import copy
 
 def Initialize_X(N):
     X = {}
-    for i in range(1, N + 1):
+    for i in range(N):
         # 随机生成4位二进制数
         state = random.randint(0, 15)
         X[i] = state
     return X
 
-def Reassign_states(X):
-    new_X = {}
-    for key, state in X.items():
-        # 将state转为4位二进制字符串
+
+def ReassignStates(X):
+    num_nodes = len(X)
+    matrix = np.zeros((4, num_nodes))
+    
+    for col, state in enumerate(X.values()):
         binary_str = format(state, '04b')
-        new_values = []
-        for bit in binary_str:
-            value = random.uniform(0, 0.1)
+        
+        for row, bit in enumerate(binary_str):
+            # value = random.uniform(0, 0.1)
+            value = 1
             if bit == '0':
                 value = -value
-            new_values.append(value)
-        new_X[key] = new_values
-    return new_X
+            matrix[3 - row, col] = value
+            
+    return matrix
+
 
 def Initialize_road_network_random(N):
     # 计算矩阵的大小
@@ -34,23 +39,23 @@ def Initialize_road_network_random(N):
     # 初始化路网字典
     road_network = {}
 
-    for i in range(1, N + 1):
+    for i in range(N):
         # 计算当前节点的坐标
-        x = (i - 1) % side_length
-        y = (i - 1) // side_length
+        x = i % side_length
+        y = i // side_length
 
         # 初始化四个方向为-1
         east, south, west, north = -1, -1, -1, -1
 
         # 计算四个方向的节点
         if x + 1 < side_length:
-            east = y * side_length + (x + 1) + 1
+            east = y * side_length + (x + 1)
         if y + 1 < side_length:
-            south = (y + 1) * side_length + x + 1
+            south = (y + 1) * side_length + x
         if x - 1 >= 0:
-            west = y * side_length + (x - 1) + 1
+            west = y * side_length + (x - 1)
         if y - 1 >= 0:
-            north = (y - 1) * side_length + x + 1
+            north = (y - 1) * side_length + x
 
         # 为当前节点更新路网信息
         road_network[i] = {
@@ -61,19 +66,20 @@ def Initialize_road_network_random(N):
         }
 
     # 确保双向连通性
-    for i, neighbors in road_network.items():
-        for direction, j in neighbors.items():
-            if j != -1:
-                opposite_direction = {
-                    "east": "west",
-                    "west": "east",
-                    "north": "south",
-                    "south": "north"
-                }
-                if road_network[j][opposite_direction[direction]] != i:
-                    road_network[j][opposite_direction[direction]] = i
+    # for i, neighbors in road_network.items():
+    #     for direction, j in neighbors.items():
+    #         if j != -1:
+    #             opposite_direction = {
+    #                 "east": "west",
+    #                 "west": "east",
+    #                 "north": "south",
+    #                 "south": "north"
+    #             }
+    #             if road_network[j][opposite_direction[direction]] != i:
+    #                 road_network[j][opposite_direction[direction]] = i
 
     return road_network
+
 
 
 def Generate_road_attributes(road_network):
@@ -119,12 +125,44 @@ def Generate_road_attributes(road_network):
 
     return attributes
 
+def Get_connected_nodes(road_attributes):
+    connections = {}
 
+    for (i, j), attributes in road_attributes.items():
+        # 如果i不在字典中，添加空列表
+        if i not in connections:
+            connections[i] = []
+        connections[i].append(j)
 
-road_net = Initialize_road_network_random(G.N)
+        # 如果j不在字典中，添加空列表
+        if j not in connections:
+            connections[j] = []
+        connections[j].append(i)
 
-X = Initialize_X(G.N)
-X_last = Initialize_X(G.N)
+    # 删除重复的连接
+    for key, value in connections.items():
+        connections[key] = list(set(value))
 
-road_attributes = Generate_road_attributes(road_net)
-road_attributes_last = Generate_road_attributes(road_net)
+    return connections
+
+def InitAll():
+    road_net = Initialize_road_network_random(G.N)
+
+    X = Initialize_X(G.N)
+    X_last = Initialize_X(G.N)
+
+    road_attributes = Generate_road_attributes(road_net)
+    road_attributes_last = Generate_road_attributes(road_net)
+
+    connected_nodes = Get_connected_nodes(road_attributes)
+    return X, X_last, road_attributes, road_attributes_last, connected_nodes
+
+# road_net = Initialize_road_network_random(G.N)
+
+# X = Initialize_X(G.N)
+# X_last = Initialize_X(G.N)
+
+# road_attributes = Generate_road_attributes(road_net)
+# road_attributes_last = Generate_road_attributes(road_net)
+
+# connected_nodes = Get_connected_nodes(road_attributes)
