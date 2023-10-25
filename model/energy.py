@@ -16,145 +16,59 @@ import numpy as np
 def Get_bit(x, position):
     return 2 * ((x >> (position - 1)) & 1) - 1
 
+def Get_X(x,i,c):
+    if isinstance(x, dict):
+        # 执行字典相关的操作 (A)
+        return Get_bit(x[i], c+1)
+    elif isinstance(x, np.ndarray):
+        # 执行NumPy数组相关的操作 (B)
+        return x[i,c]
 
-def Calculate_q_ew(pair, X, road_attributes):
-    i, j = pair
+def q_sn_j_i(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = (1 - Get_X(x, j, 0)) * (1 - Get_X(x, j, 1)) * Get_X(q, j, 2) * Get_X(alpha, j, 2)
+    part2 = (1 - Get_X(x, j, 0)) * Get_X(x, j, 1) * Get_X(q, j, 0) * Get_X(beta, j, 0)
+    part3 = Get_X(x, j, 2) * Get_X(x, j, 3) * Get_X(q, j, 3) * (1 - Get_X(alpha, j, 3) - Get_X(beta, j, 3))
+    part4 = -Get_X(x, i, 0) * (1 - Get_X(x, i, 1)) * Get_X(q, i, 3) * Get_X(alpha, i, 3)
+    part5 = -Get_X(x, i, 2) * Get_X(x, i, 3) * Get_X(q, i, 3) * (1 - Get_X(alpha, i, 3))
+    return part1 + part2 + part3 + part4 + part5
 
-    # 从X中获取二进制位
-    x_i1 = (Get_bit(X[i], 1) + 1) / 2
-    x_i3 = (Get_bit(X[i], 3) + 1) / 2
-    x_j3 = (Get_bit(X[j], 3) + 1) / 2
-    x_j4 = (Get_bit(X[j], 4) + 1) / 2
+def q_sn_i_j(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = (1 - Get_X(x, i, 2)) * (1 - Get_X(x, i, 3)) * Get_X(q, i, 0) * Get_X(alpha, i, 0)
+    part2 = (1 - Get_X(x, i, 2)) * Get_X(x, i, 3) * Get_X(q, i, 2) * Get_X(beta, i, 2)
+    part3 = Get_X(x, i, 0) * Get_X(x, i, 1) * Get_X(q, i, 1) * (1 - Get_X(alpha, i, 1) - Get_X(beta, i, 1))
+    part4 = -Get_X(x, j, 2) * (1 - Get_X(x, j, 3)) * Get_X(q, j, 1) * Get_X(alpha, j, 1)
+    part5 = -Get_X(x, j, 0) * Get_X(x, j, 1) * Get_X(q, j, 1) * (1 - Get_X(alpha, j, 1))
+    return part1 + part2 + part3 + part4 + part5
 
-    # 从全局字典中取得相关值
-    alpha_i1 = road_attributes[(i, j)]["left_turn_probability"]
-    alpha_j1 = road_attributes[(j, i)]["left_turn_probability"]
-    alpha_j4 = road_attributes[(j, i)]["left_turn_probability"]
-    beta_j2 = road_attributes[(j, i)]["right_turn_probability"]
-    q_i1 = road_attributes[(i, j)]["traffic_flow"]
-    q_j1 = road_attributes[(j, i)]["traffic_flow"]
-    q_j2 = road_attributes[(j, i)]["traffic_flow"]
-    q_j4 = road_attributes[(j, i)]["traffic_flow"]
-
-    # 使用上面的公式计算q_ew
-    term1 = (1 - x_j3) * x_j4 * q_j4 * alpha_j4
-    term2 = x_j3 * x_j4 * q_j2 * beta_j2
-    term3 = x_j3 * (1 - x_j4) * q_j1 * (1 - alpha_j1 - alpha_j4)
-    term4 = (1 - x_i1) * (1 - x_j3) * q_i1 * alpha_i1
-    term5 = x_i3 * (1 - x_j4) * q_i1 * (1 - alpha_i1)
-
-    q_ew = term1 + term2 + term3 - term4 - term5
-    return q_ew
-
-
-def Calculate_q_sn(pair, X, road_attributes):
-    i, j = pair
-
-    # 从X中获取二进制位
-    x_j3 = (Get_bit(X[j], 3) + 1) / 2
-    x_j4 = (Get_bit(X[j], 4) + 1) / 2
-    x_i3 = (Get_bit(X[i], 3) + 1) / 2
-    x_i4 = (Get_bit(X[i], 4) + 1) / 2
-
-    # 从全局字典中取得相关值
-    alpha_j3 = road_attributes[(j, i)]["left_turn_probability"]
-    beta_j1 = road_attributes[(j, i)]["right_turn_probability"]
-    alpha_i4 = road_attributes[(i, j)]["left_turn_probability"]
-    beta_i4 = road_attributes[(i, j)]["right_turn_probability"]
-    q_j3 = road_attributes[(j, i)]["traffic_flow"]
-    q_j1 = road_attributes[(j, i)]["traffic_flow"]
-    q_j4 = road_attributes[(j, i)]["traffic_flow"]
-    q_i4 = road_attributes[(i, j)]["traffic_flow"]
-
-    # 使用上面的公式计算q_sn
-    term1 = (1 - x_j3) * (1 - x_j4) * q_j3 * alpha_j3
-    term2 = x_j3 * (1 - x_j4) * q_j1 * beta_j1
-    term3 = x_i4 * x_i3 * q_i4 * (1 - alpha_i4 - beta_i4)
-    term4 = (1 - x_i3) * x_i4 * q_i4 * alpha_i4
-    term5 = x_i3 * x_i4 * q_i4 * (1 - alpha_i4)
-
-    q_sn = term1 + term2 + term3 - term4 - term5
-    return q_sn
+def q_ew_j_i(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = Get_X(x, j, 0) * (1 - Get_X(x, j, 1)) * Get_X(q, j, 3) * Get_X(alpha, j, 3)
+    part2 = Get_X(x, j, 0) * Get_X(x, j, 1) * Get_X(q, j, 1) * Get_X(beta, j, 1)
+    part3 = (1 - Get_X(x, j, 0)) * Get_X(x, j, 1) * Get_X(q, j, 0) * (1 - Get_X(alpha, j, 0) - Get_X(beta, j, 0))
+    part4 = -(1 - Get_X(x, i, 2)) * (1 - Get_X(x, i, 3)) * Get_X(q, i, 0) * Get_X(alpha, i, 0)
+    part5 = -Get_X(x, i, 1) * (1 - Get_X(x, i, 0)) * Get_X(q, i, 0) * (1 - Get_X(alpha, i, 0))
+    return part1 + part2 + part3 + part4 + part5
 
 
-def Calculate_H_q(road_attributes, connected_nodes):
+def q_ew_i_j(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = Get_X(x, i, 2) * (1 - Get_X(x, i, 3)) * Get_X(q, i, 1) * Get_X(alpha, i, 1)
+    part2 = Get_X(x, i, 2) * Get_X(x, i, 3) * Get_X(q, i, 3) * Get_X(beta, i, 3)
+    part3 = (1 - Get_X(x, i, 2)) * Get_X(x, i, 3) * Get_X(q, i, 2) * (1 - Get_X(alpha, i, 2) - Get_X(beta, i, 2))
+    part4 = -(1 - Get_X(x, j, 0)) * (1 - Get_X(x, j, 1)) * Get_X(q, j, 2) * Get_X(alpha, j, 2)
+    part5 = -Get_X(x, j, 3) * (1 - Get_X(x, j, 2)) * Get_X(q, j, 2) * (1 - Get_X(alpha, j, 2))
+    return part1 + part2 + part3 + part4 + part5
+
+
+def Calculate_H_q(road_attributes):
     N = G.N
-    H_q = 0
 
-    for i in range(N):
-        # 计算平均流量
-        # adjacent_list = [j for j in range(1, N+1) if (j, i) in road_attributes]
-        adjacent_list = connected_nodes.get(i, [])
-        total_flow_i = sum([road_attributes[(j, i)]["traffic_flow"]
-                           for j in adjacent_list])
-        avg_q_i = total_flow_i / len(adjacent_list)
+    qlist = road_attributes["q"]
+    variances = [np.var(row[row != 0]) if np.any(row != 0) else 0 for row in qlist]
 
-        # 计算流量偏差代价
-        for j in adjacent_list:
-            q_ji = road_attributes[(j, i)]["traffic_flow"]
-            H_q += (q_ji - avg_q_i)**2 / len(adjacent_list)
-
-    return H_q
-
-
-def Calculate_q_ew_forbsb(pair, X, road_attributes):
-    i, j = pair
-
-    # 从X中获取二进制位
-    x_i1 = (X[0, i] + 1) / 2
-    x_i3 = (X[2, i] + 1) / 2
-    x_j3 = (X[2, j] + 1) / 2
-    x_j4 = (X[3, j] + 1) / 2
-
-    # 从全局字典中取得相关值
-    alpha_i1 = road_attributes[(i, j)]["left_turn_probability"]
-    alpha_j1 = road_attributes[(j, i)]["left_turn_probability"]
-    alpha_j4 = road_attributes[(j, i)]["left_turn_probability"]
-    beta_j2 = road_attributes[(j, i)]["right_turn_probability"]
-    q_i1 = road_attributes[(i, j)]["traffic_flow"]
-    q_j1 = road_attributes[(j, i)]["traffic_flow"]
-    q_j2 = road_attributes[(j, i)]["traffic_flow"]
-    q_j4 = road_attributes[(j, i)]["traffic_flow"]
-
-    # 使用上面的公式计算q_ew
-    term1 = (1 - x_j3) * x_j4 * q_j4 * alpha_j4
-    term2 = x_j3 * x_j4 * q_j2 * beta_j2
-    term3 = x_j3 * (1 - x_j4) * q_j1 * (1 - alpha_j1 - alpha_j4)
-    term4 = (1 - x_i1) * (1 - x_j3) * q_i1 * alpha_i1
-    term5 = x_i3 * (1 - x_j4) * q_i1 * (1 - alpha_i1)
-
-    q_ew = term1 + term2 + term3 - term4 - term5
-    return q_ew
-
-
-def Calculate_q_sn_forbsb(pair, X, road_attributes):
-    i, j = pair
-
-    # 从X中获取二进制位
-    x_j3 = (X[2, j] + 1) / 2
-    x_j4 = (X[3, j] + 1) / 2
-    x_i3 = (X[2, i] + 1) / 2
-    x_i4 = (X[3, i] + 1) / 2
-
-    # 从全局字典中取得相关值
-    alpha_j3 = road_attributes[(j, i)]["left_turn_probability"]
-    beta_j1 = road_attributes[(j, i)]["right_turn_probability"]
-    alpha_i4 = road_attributes[(i, j)]["left_turn_probability"]
-    beta_i4 = road_attributes[(i, j)]["right_turn_probability"]
-    q_j3 = road_attributes[(j, i)]["traffic_flow"]
-    q_j1 = road_attributes[(j, i)]["traffic_flow"]
-    q_j4 = road_attributes[(j, i)]["traffic_flow"]
-    q_i4 = road_attributes[(i, j)]["traffic_flow"]
-
-    # 使用上面的公式计算q_sn
-    term1 = (1 - x_j3) * (1 - x_j4) * q_j3 * alpha_j3
-    term2 = x_j3 * (1 - x_j4) * q_j1 * beta_j1
-    term3 = x_i4 * x_i3 * q_i4 * (1 - alpha_i4 - beta_i4)
-    term4 = (1 - x_i3) * x_i4 * q_i4 * alpha_i4
-    term5 = x_i3 * x_i4 * q_i4 * (1 - alpha_i4)
-
-    q_sn = term1 + term2 + term3 - term4 - term5
-    return q_sn
+    return np.sum(variances)
 
 
 def D_i_c(i, c, X_i_c, X_last):
@@ -316,17 +230,17 @@ def Calculate_H_w_forbsb(X_now):
     return sum([Calculate_H_w_i_forbsb(X_now[:, i]) for i in range(G.N)])
 
 
-def H_total(road_attributes, connected_nodes, X, X_last):
+def H_total(road_attributes, X, X_last):
     # print(Calculate_H_q(road_attributes), Calculate_H_d(X_now = X), Calculate_H_w(X))
-    tmpHq = Calculate_H_q(road_attributes, connected_nodes)/G.N
+    tmpHq = Calculate_H_q(road_attributes)/G.N
     tmpHd = Calculate_H_d(X_now=X, X_last=X_last)/G.N
     tmpHw = Calculate_H_w(X)/G.N
     return tmpHd+tmpHq+tmpHw, tmpHq, tmpHd, tmpHw
 
 
-def H_total_forbsb(road_attributes, connected_nodes, X, X_last):
+def H_total_forbsb(road_attributes, X, X_last):
     # print(Calculate_H_q(road_attributes), Calculate_H_d(X_now = X), Calculate_H_w(X))
-    tmpHq = Calculate_H_q(road_attributes, connected_nodes)/G.N
+    tmpHq = Calculate_H_q(road_attributes)/G.N
     tmpHd = Calculate_H_d_forbsb(X, X_last)/G.N
     tmpHw = Calculate_H_w_forbsb(X)/G.N
     return tmpHd+tmpHq+tmpHw, tmpHq, tmpHd, tmpHw
@@ -342,66 +256,43 @@ def Random_change_X(X_now):
     return X_now
 
 
-def Update_traffic_flow(attributes, tmpX):
-    new_attributes = {}
+def Update_traffic_flow(attributes, tmpX, road_toward):
 
-    for (node, next_node), attribute in attributes.items():
-        q = copy.deepcopy(attribute["traffic_flow"])
+    new_q = copy.deepcopy(attributes["q"])
 
-        # 根据道路方向添加q_ew或q_sn
-        if attribute["direction"] in ["east", "west"]:
-            q += Calculate_q_ew((node, next_node), X=tmpX, road_attributes=attributes)
-        elif attribute["direction"] in ["north", "south"]:
-            q += Calculate_q_sn((node, next_node), X=tmpX, road_attributes=attributes)
+    for (node, next_node), _ in road_toward.items():
+        direction = road_toward.get((node, next_node), {}).get("direction", None)
 
-        # 更新车流量
-        new_attributes[(node, next_node)] = {
-            "left_turn_probability": attribute["left_turn_probability"],
-            "right_turn_probability": attribute["right_turn_probability"],
-            "traffic_flow": q,
-            "direction": attribute["direction"]
-        }
+        if direction == "east":
+            new_q[node,0] += q_ew_i_j(tmpX, attributes, node, next_node)
+        elif direction == "west":
+            new_q[node,2] += q_ew_j_i(tmpX, attributes, node, next_node)
+        elif direction == "north":
+            new_q[node,1] += q_sn_j_i(tmpX, attributes, node, next_node)
+        elif direction == "south":
+            new_q[node,3] += q_sn_i_j(tmpX, attributes, node, next_node)
 
-    return new_attributes
-
-
-def Update_traffic_flow_forbsb(attributes, tmpX):
-    new_attributes = {}
-
-    for (node, next_node), attribute in attributes.items():
-        q = copy.deepcopy(attribute["traffic_flow"])
-
-        # 根据道路方向添加q_ew或q_sn
-        if attribute["direction"] in ["east", "west"]:
-            q += Calculate_q_ew_forbsb((node, next_node), X=tmpX, road_attributes=attributes)
-        elif attribute["direction"] in ["north", "south"]:
-            q += Calculate_q_sn_forbsb((node, next_node), X=tmpX, road_attributes=attributes)
-
-        # 更新车流量
-        new_attributes[(node, next_node)] = {
-            "left_turn_probability": attribute["left_turn_probability"],
-            "right_turn_probability": attribute["right_turn_probability"],
-            "traffic_flow": q,
-            "direction": attribute["direction"]
-        }
-
-    return new_attributes
-
-
-def Normalize_traffic_flow(attributes):
-    # 获取所有q的值
-    all_q_values = [attr["traffic_flow"] for attr in attributes.values()]
-
-    # 找到q的最大和最小值
-    min_q = min(all_q_values)
-    max_q = max(all_q_values)
-
-    # 根据q的最大和最小值对所有的q进行缩放
-    for key, attr in attributes.items():
-        normalized_q = ((attr["traffic_flow"] - min_q) / (max_q - min_q)) * 100
-        attributes[key]["traffic_flow"] = normalized_q
+    attributes["q"] = new_q
 
     return attributes
+
+
+def Normalize_traffic_matrix(q_matrix):
+    # q_matrix 是一个二维矩阵，其中存储着交通流量的q值
+
+    # 找到矩阵中的最大值和最小值
+    min_q = np.min(q_matrix)
+    max_q = np.max(q_matrix)
+
+    # 避免除以零的情况，如果最大值和最小值相同，则返回原矩阵
+    if min_q == max_q:
+        return q_matrix
+
+    # 对矩阵中的每个元素进行归一化
+    normalized_matrix = ((q_matrix - min_q) / (max_q - min_q)) * 100
+
+    return normalized_matrix
+
 
 
 # 示例

@@ -66,64 +66,90 @@ def Initialize_road_network_random(N):
         }
 
     # 确保双向连通性
-    # for i, neighbors in road_network.items():
-    #     for direction, j in neighbors.items():
-    #         if j != -1:
-    #             opposite_direction = {
-    #                 "east": "west",
-    #                 "west": "east",
-    #                 "north": "south",
-    #                 "south": "north"
-    #             }
-    #             if road_network[j][opposite_direction[direction]] != i:
-    #                 road_network[j][opposite_direction[direction]] = i
-
-    return road_network
-
-
-
-def Generate_road_attributes(road_network):
-    attributes = {}
-
-    for node, directions in road_network.items():
-        for direction, next_node in directions.items():
-            if next_node != -1:  # 检查是否有连接的节点
-                key = (node, next_node)
-                reverse_key = (next_node, node)
-
-                # 如果已经为此链接生成过属性，就跳过
-                if key in attributes or reverse_key in attributes:
-                    continue
-
-                # 生成随机的左转和右转概率
-                a = random.uniform(0, 1)
-                b = random.uniform(0, 1 - a)  # 确保 a + b <= 1
-
-                # 生成随机的车流量
-                q = random.randint(0, 100)
-
-                attributes[key] = {
-                    "left_turn_probability": a,
-                    "right_turn_probability": b,
-                    "traffic_flow": q,
-                    "direction": direction  # 记录当前道路的朝向
-                }
-
-                # 为反方向的道路设置相同的属性
+    for i, neighbors in road_network.items():
+        for direction, j in neighbors.items():
+            if j != -1:
                 opposite_direction = {
                     "east": "west",
                     "west": "east",
                     "north": "south",
                     "south": "north"
                 }
+                if road_network[j][opposite_direction[direction]] != i:
+                    road_network[j][opposite_direction[direction]] = i
+
+    return road_network
+
+
+
+def Generate_road_attributes(road_network, N):
+    # 初始化矩阵
+    left_turn_probability = [[0 for _ in range(4)] for _ in range(N)]
+    right_turn_probability = [[0 for _ in range(4)] for _ in range(N)]
+    traffic_flow = [[0 for _ in range(4)] for _ in range(N)]
+
+    # 初始化方向字典
+    attributes = {}
+
+    # 方向映射
+    direction_map = {
+        "east": 0,
+        "north": 1,
+        "west": 2,
+        "south": 3
+    }
+
+    # 反方向映射
+    opposite_direction_map = {0: 2, 1: 3, 2: 0, 3: 1}
+    opposite_direction = {
+        "east": "west",
+        "west": "east",
+        "north": "south",
+        "south": "north"
+    }
+
+    # 遍历网络
+    for node, directions in road_network.items():
+        for direction, next_node in directions.items():
+            if next_node != -1:  # 检查是否有连接的节点
+                key = (node, next_node)
+                reverse_key = (next_node, node)
+
+                if key in attributes or reverse_key in attributes:
+                    continue
+
+                # 随机生成左转和右转概率
+                a = random.uniform(0, 1)
+                b = random.uniform(0, 1 - a)
+
+                # 随机生成车流量
+                q = random.randint(0, 100)
+
+                # 更新矩阵
+                dir_index = direction_map[direction]
+                left_turn_probability[node][dir_index] = a
+                right_turn_probability[node][dir_index] = b
+                traffic_flow[node][dir_index] = q
+
+                # 更新反方向
+                opposite_dir_index = opposite_direction_map[dir_index]
+                left_turn_probability[next_node][opposite_dir_index] = a
+                right_turn_probability[next_node][opposite_dir_index] = b
+                traffic_flow[next_node][opposite_dir_index] = q
+
+                # 更新方向字典
+                attributes[key] = {
+                    "direction": direction
+                }
                 attributes[reverse_key] = {
-                    "left_turn_probability": a,
-                    "right_turn_probability": b,
-                    "traffic_flow": q,
                     "direction": opposite_direction[direction]
                 }
 
-    return attributes
+    nd = {"a": np.array(left_turn_probability),
+          "b": np.array(right_turn_probability),
+          "q": np.array(traffic_flow)}
+
+    return nd, attributes
 
 def Get_connected_nodes(road_attributes):
     connections = {}
@@ -151,11 +177,11 @@ def InitAll():
     X = Initialize_X(G.N)
     X_last = Initialize_X(G.N)
 
-    road_attributes = Generate_road_attributes(road_net)
-    road_attributes_last = Generate_road_attributes(road_net)
+    road_attributes, road_toward = Generate_road_attributes(road_net,G.N)
+    road_attributes_last, road_toward = Generate_road_attributes(road_net,G.N)
 
-    connected_nodes = Get_connected_nodes(road_attributes)
-    return X, X_last, road_attributes, road_attributes_last, connected_nodes
+    connected_nodes = Get_connected_nodes(road_toward)
+    return X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward
 
 # road_net = Initialize_road_network_random(G.N)
 

@@ -7,8 +7,8 @@ import math
 import copy
 import random
 
-def Simulated_annealing(initial_temperature, min_temperature, cooling_rate, kbT, X, X_last, road_attributes, road_attributes_last, connected_nodes):
-    current_energy, hq, hd, hw = energy.H_total(road_attributes_last, connected_nodes, X_last, X_last)
+def Simulated_annealing(initial_temperature, min_temperature, cooling_rate, kbT, X, X_last, road_attributes, road_attributes_last, road_toward, connected_nodes):
+    current_energy, hq, hd, hw = energy.H_total(road_attributes_last, X_last, X_last)
     current_h_list = {"Hq":hq, "Hd":hd, "Hw":hw}
 
     best_state = copy.deepcopy(X)
@@ -22,9 +22,9 @@ def Simulated_annealing(initial_temperature, min_temperature, cooling_rate, kbT,
     while temperature > min_temperature:
         for _ in range(15*G.N):
             X = energy.Random_change_X(X)
-            road_attributes = energy.Update_traffic_flow(road_attributes_last, X)
-            road_attributes = energy.Normalize_traffic_flow(road_attributes)
-            new_energy, hq, hd, hw = energy.H_total(road_attributes=road_attributes, connected_nodes= connected_nodes, X = X, X_last = X_last)
+            road_attributes = energy.Update_traffic_flow(road_attributes_last, X, road_toward)
+            road_attributes["q"] = energy.Normalize_traffic_matrix(road_attributes["q"])
+            new_energy, hq, hd, hw = energy.H_total(road_attributes, X = X, X_last = X_last)
             new_h_list = {"Hq":hq, "Hd":hd, "Hw":hw}
 
             delta_energy = new_energy - current_energy
@@ -48,7 +48,7 @@ def Simulated_annealing(initial_temperature, min_temperature, cooling_rate, kbT,
             "X": copy.deepcopy(X)
         })
 
-        # print(current_energy, current_h_list, temperature)
+        print(current_energy, current_h_list, temperature)
 
         # 更新温度
         temperature = temperature * (1 - cooling_rate)
@@ -57,8 +57,8 @@ def Simulated_annealing(initial_temperature, min_temperature, cooling_rate, kbT,
 
 if __name__ == "__main__":
     # 使用模拟退火函数的示例：
-    X, X_last, road_attributes, road_attributes_last, connected_nodes = gv.InitAll()
-    _, tmpHq, tmpHd, _ = energy.H_total(road_attributes_last, connected_nodes, X, X_last)
+    X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = gv.InitAll()
+    _, tmpHq, tmpHd, _ = energy.H_total(road_attributes_last, X, X_last)
     kbT = tmpHd + tmpHq
     best_solution, temp_data_list = Simulated_annealing(
         initial_temperature=1000, 
@@ -69,6 +69,7 @@ if __name__ == "__main__":
         X_last = X_last,
         road_attributes = road_attributes,
         road_attributes_last = road_attributes_last,
+        road_toward = road_toward,
         connected_nodes = connected_nodes)
 
     ft.Save_data(temp_data_list, "Result/SA/test_result.pkl")

@@ -151,6 +151,7 @@ def q_deriv(X, j, i, c, road_attributes):
     else:
         return 0  # Return 0 if direction is not recognized
 
+
 def q_deriv_mirror(X, j, i, c, road_attributes):
     pair = (j, i)
 
@@ -160,6 +161,7 @@ def q_deriv_mirror(X, j, i, c, road_attributes):
         return q_sn_deriv(pair, X, road_attributes)
     else:
         return 0  # Return 0 if direction is not recognized
+
 
 def H_w_dot(X, m):
     tmp1 = energy.Calculate_H_w_i_forbsb(X)
@@ -268,11 +270,11 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
                                           road_attributes, connected_nodes)
 
         # Calculate the current energy and related parameters
-        road_attributes = energy.Update_traffic_flow_forbsb(
-            road_attributes_last, X)
-        road_attributes = energy.Normalize_traffic_flow(road_attributes)
+        road_attributes = energy.Update_traffic_flow(
+            road_attributes_last, X, road_toward)
+        road_attributes["q"] = energy.Normalize_traffic_matrix(road_attributes["q"])
         current_energy, hq, hd, hw = energy.H_total_forbsb(
-            road_attributes, connected_nodes, X, X_last)
+            road_attributes, X, X_last)
         current_h_list = {"Hq": hq, "Hd": hd, "Hw": hw}
 
         # print(current_energy, current_h_list)
@@ -283,34 +285,34 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
             "current_h_list": current_h_list
         })
 
-    # # 重映射X的值
-    X = ReplaceColumns(X, X_last)
-    road_attributes = energy.Update_traffic_flow_forbsb(
-        road_attributes_last, X)
-    road_attributes = energy.Normalize_traffic_flow(road_attributes)
-    current_energy, hq, hd, hw = energy.H_total_forbsb(
-        road_attributes, connected_nodes, X, X_last)
-    current_h_list = {"Hq": hq, "Hd": hd, "Hw": hw}
+    # # # 重映射X的值
+    # X = ReplaceColumns(X, X_last)
+    # road_attributes = energy.Update_traffic_flow_forbsb(
+    #     road_attributes_last, X)
+    # road_attributes = energy.Normalize_traffic_flow(road_attributes)
+    # current_energy, hq, hd, hw = energy.H_total_forbsb(
+    #     road_attributes, connected_nodes, X, X_last)
+    # current_h_list = {"Hq": hq, "Hd": hd, "Hw": hw}
 
-    # print(current_energy, current_h_list)
-    # Append the parameters to the record
-    parameters_record.append({
-        "iteration": iterations,
-        "current_energy": current_energy,
-        "current_h_list": current_h_list
-    })
+    # # print(current_energy, current_h_list)
+    # # Append the parameters to the record
+    # parameters_record.append({
+    #     "iteration": iterations,
+    #     "current_energy": current_energy,
+    #     "current_h_list": current_h_list
+    # })
 
     return X, parameters_record
 
 
 if __name__ == "__main__":
-    X, X_last, road_attributes, road_attributes_last, connected_nodes = gv.InitAll()
+    X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = gv.InitAll()
     X = gv.ReassignStates(X)
     X_last = gv.ReassignStates(X_last)
     Y = InitializeY(X.shape, 0, 0.01)
 
     best_solution, temp_data_list = SimulatedBifurcation(
-        X_last, X_last, Y, road_attributes, road_attributes_last, connected_nodes)
+        X_last, X_last, Y, road_attributes, road_attributes_last, connected_nodes, road_toward)
     ft.Save_data(temp_data_list, "Result/SB/test_result.pkl")
     ft.Save_data([best_solution, X_last], "Result/SB/test_result_X.pkl")
 
