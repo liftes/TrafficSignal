@@ -8,6 +8,12 @@ import copy
 import random
 import numpy as np
 
+direction_map = {
+    "east": 0,
+    "north": 1,
+    "west": 2,
+    "south": 3
+}
 
 def State_to_str(state):
     return ''.join([str(int(val)) for val in state])
@@ -91,77 +97,10 @@ def a(t):
     return G.k*t
 
 
-def q(qdict, j, i):
-    return qdict[(j, i)]["traffic_flow"]
-
-
-def q_ew_deriv(pair, X, road_attributes):
-    i, j = pair
-
-    # 从X中获取值
-    x_i1 = X[i][0]
-    x_i3 = X[i][2]
-
-    # 从全局字典中取得相关值
-    alpha_i1 = road_attributes[(i, j)]["left_turn_probability"]
-    q_i1 = road_attributes[(i, j)]["traffic_flow"]
-
-    # Derivatives of term_4 and term_5 w.r.t. x_i1 and x_i3
-    direction = road_attributes[(i, j)]["direction"]
-
-    if direction in ["east", "west"]:
-        d_term_4 = -(1 - x_i3) * q_i1 * alpha_i1
-        d_term_5 = x_i3 * q_i1 * (1 - alpha_i1)
-    else:
-        d_term_4 = d_term_5 = 0
-
-    return d_term_4 + d_term_5
-
-
-def q_sn_deriv(pair, X, road_attributes):
-    i, j = pair
-
-    # 从X中获取值
-    x_i3 = X[i][2]
-    x_i4 = X[i][3]
-
-    # 从全局字典中取得相关值
-    alpha_i4 = road_attributes[(i, j)]["left_turn_probability"]
-    q_i4 = road_attributes[(i, j)]["traffic_flow"]
-
-    # Derivatives of term_4 and term_5 w.r.t. x_i3 and x_i4
-    direction = road_attributes[(i, j)]["direction"]
-
-    if direction in ["north", "south"]:
-        d_term_4 = (1 - x_i3) * q_i4 * alpha_i4
-        d_term_5 = -x_i3 * q_i4 * (1 - alpha_i4)
-    else:
-        d_term_4 = d_term_5 = 0
-
-    return d_term_4 + d_term_5
-
-
-def q_deriv(X, j, i, c, road_attributes):
-    pair = (j, i)
-
-    if c in ["east", "west"]:
-        return q_ew_deriv(pair, X, road_attributes)
-    elif c in ["north", "south"]:
-        return q_sn_deriv(pair, X, road_attributes)
-    else:
-        return 0  # Return 0 if direction is not recognized
-
-
-def q_deriv_mirror(X, j, i, c, road_attributes):
-    pair = (j, i)
-
-    if c in ["east", "west"]:
-        return q_ew_deriv(pair, X, road_attributes)
-    elif c in ["north", "south"]:
-        return q_sn_deriv(pair, X, road_attributes)
-    else:
-        return 0  # Return 0 if direction is not recognized
-
+def q(qdict, road_toward, j, i):
+    global direction_map
+    direction = road_toward[(j,i)]["direction"]
+    return qdict["q"][j,direction_map[direction]]
 
 def H_w_dot(X, m):
     tmp1 = energy.Calculate_H_w_i_forbsb(X)
@@ -178,7 +117,7 @@ def X_dot(Y, i, c):
     return a_0 * y_i_c
 
 
-def Y_dot(X, X_last, i, c, t, qdict, connected_nodes):
+def Y_dot(X, X_last, i, c, t, qdict, connected_nodes, road_toward):
     """
     Calculate the value of y_dot for given parameters.
 
@@ -207,19 +146,19 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes):
     # Calculating individual parts of the equation
     part1 = -(a0 - a(t)) * X[c, i]
 
-    q_i_bar = sum([q(qdict, j, i) for j in Ni])/Ni_len
-    q_i_bar_deriv = sum([q_deriv(X[:, i], j, i, c, qdict) for j in Ni])/Ni_len
+    q_i_bar = sum([q(qdict, road_toward, j, i) for j in Ni])/Ni_len
+    q_i_bar_deriv = sum([energy.q_diff(X, qdict, j, i, c, road_toward, "ji") for j in Ni])/Ni_len
 
     # 与中心表征节点i_0相关的导数，即汇入i_0道路的Hq项导数
-    part2 = [(2/Ni_len) * (q(qdict,j,i)-q_i_bar) * (q_deriv(X[:, i], j, i, c, qdict) - q_i_bar_deriv) for j in Ni]
+    part2 = sum([(2/Ni_len) * (q(qdict,road_toward,j,i)-q_i_bar) * (energy.q_diff(X, qdict, j, i, c, road_toward, "ji") - q_i_bar_deriv) for j in Ni])
 
     # 流出中心节点i_0的导数
     part3 = 0
     for j0 in Ni:
         Nj = connected_nodes[j0]
         Nj_len = len(Nj)
-        q_j_bar = sum([q(qdict, j, j0) for j in Nj])/Nj_len
-        part3 += (2*(Nj_len-1)/(Nj**2)) * (q(qdict,i,j0)-q_j_bar) * q_deriv_mirror(X[:j0],j0,i,c,qdict)
+        q_j_bar = sum([q(qdict, road_toward, j, j0) for j in Nj])/Nj_len
+        part3 += (2*(Nj_len-1)/(Nj_len**2)) * (q(qdict,road_toward,i,j0)-q_j_bar) * energy.q_diff(X, qdict, j0, i, c, road_toward, "ij")
 
     part5 = - G.eta * (X[c, i] - mu[c, i])/sigma**2 * \
         np.exp(-((X[c, i] - mu[c, i])**2)/(2*sigma**2))
@@ -229,7 +168,7 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes):
     return y_dot_value
 
 
-def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, connected_nodes):
+def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, connected_nodes, road_toward):
     """
     Implement ballistic simulated bifurcation.
 
@@ -249,8 +188,8 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
     parameters_record = []
 
     # Define parameters for the simulation
-    dt = 0.1  # Time step
-    iterations = 500  # Number of iterations
+    dt = 0.004  # Time step
+    iterations = 1000  # Number of iterations
 
     # Iteratively update X and Y using Euler's method (alternating implicit scheme)
     for iteration in range(iterations):
@@ -267,7 +206,7 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
                     # Update X based on the Xdot function
                     X[c][i] += dt * X_dot(Y, i, c)
                     Y[c][i] += dt * Y_dot(X, X_last, i, c, iteration*dt,
-                                          road_attributes, connected_nodes)
+                                          road_attributes, connected_nodes, road_toward)
 
         # Calculate the current energy and related parameters
         road_attributes = energy.Update_traffic_flow(
@@ -277,7 +216,7 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
             road_attributes, X, X_last)
         current_h_list = {"Hq": hq, "Hd": hd, "Hw": hw}
 
-        # print(current_energy, current_h_list)
+        print(current_energy, current_h_list, iteration)
         # Append the parameters to the record
         parameters_record.append({
             "iteration": iteration,

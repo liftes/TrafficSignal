@@ -17,50 +17,222 @@ def Get_bit(x, position):
     return 2 * ((x >> (position - 1)) & 1) - 1
 
 def Get_X(x,i,c):
+    # return Get_bit(x[i], c+1)
     if isinstance(x, dict):
         # 执行字典相关的操作 (A)
         return Get_bit(x[i], c+1)
     elif isinstance(x, np.ndarray):
         # 执行NumPy数组相关的操作 (B)
-        return x[i,c]
+        return x[c,i]
 
 def q_sn_j_i(x, nd, j, i):
     q, alpha, beta = nd["q"], nd["a"], nd["b"]
-    part1 = (1 - Get_X(x, j, 0)) * (1 - Get_X(x, j, 1)) * Get_X(q, j, 2) * Get_X(alpha, j, 2)
-    part2 = (1 - Get_X(x, j, 0)) * Get_X(x, j, 1) * Get_X(q, j, 0) * Get_X(beta, j, 0)
-    part3 = Get_X(x, j, 2) * Get_X(x, j, 3) * Get_X(q, j, 3) * (1 - Get_X(alpha, j, 3) - Get_X(beta, j, 3))
-    part4 = -Get_X(x, i, 0) * (1 - Get_X(x, i, 1)) * Get_X(q, i, 3) * Get_X(alpha, i, 3)
-    part5 = -Get_X(x, i, 2) * Get_X(x, i, 3) * Get_X(q, i, 3) * (1 - Get_X(alpha, i, 3))
+    part1 = (1 - Get_X(x, j, 0)) * (1 - Get_X(x, j, 1)) * q[j, 2] * alpha[j, 2]
+    part2 = (1 - Get_X(x, j, 0)) * Get_X(x, j, 1) * q[j, 0] * beta[j, 0]
+    part3 = Get_X(x, j, 2) * Get_X(x, j, 3) * q[j, 3] * (1 - alpha[j, 3] - beta[j, 3])
+    part4 = -Get_X(x, i, 0) * (1 - Get_X(x, i, 1)) * q[i, 3] * alpha[i, 3]
+    part5 = -Get_X(x, i, 2) * Get_X(x, i, 3) * q[i, 3] * (1 - alpha[i, 3])
     return part1 + part2 + part3 + part4 + part5
 
 def q_sn_i_j(x, nd, i, j):
     q, alpha, beta = nd["q"], nd["a"], nd["b"]
-    part1 = (1 - Get_X(x, i, 2)) * (1 - Get_X(x, i, 3)) * Get_X(q, i, 0) * Get_X(alpha, i, 0)
-    part2 = (1 - Get_X(x, i, 2)) * Get_X(x, i, 3) * Get_X(q, i, 2) * Get_X(beta, i, 2)
-    part3 = Get_X(x, i, 0) * Get_X(x, i, 1) * Get_X(q, i, 1) * (1 - Get_X(alpha, i, 1) - Get_X(beta, i, 1))
-    part4 = -Get_X(x, j, 2) * (1 - Get_X(x, j, 3)) * Get_X(q, j, 1) * Get_X(alpha, j, 1)
-    part5 = -Get_X(x, j, 0) * Get_X(x, j, 1) * Get_X(q, j, 1) * (1 - Get_X(alpha, j, 1))
+    part1 = (1 - Get_X(x, i, 2)) * (1 - Get_X(x, i, 3)) * q[i, 0] * alpha[i, 0]
+    part2 = (1 - Get_X(x, i, 2)) * Get_X(x, i, 3) * q[i, 2] * beta[i, 2]
+    part3 = Get_X(x, i, 0) * Get_X(x, i, 1) * q[i, 1] * (1 - alpha[i, 1] - beta[i, 1])
+    part4 = -Get_X(x, j, 2) * (1 - Get_X(x, j, 3)) * q[j, 1] * alpha[j, 1]
+    part5 = -Get_X(x, j, 0) * Get_X(x, j, 1) * q[j, 1] * (1 - alpha[j, 1])
     return part1 + part2 + part3 + part4 + part5
 
 def q_ew_j_i(x, nd, j, i):
     q, alpha, beta = nd["q"], nd["a"], nd["b"]
-    part1 = Get_X(x, j, 0) * (1 - Get_X(x, j, 1)) * Get_X(q, j, 3) * Get_X(alpha, j, 3)
-    part2 = Get_X(x, j, 0) * Get_X(x, j, 1) * Get_X(q, j, 1) * Get_X(beta, j, 1)
-    part3 = (1 - Get_X(x, j, 0)) * Get_X(x, j, 1) * Get_X(q, j, 0) * (1 - Get_X(alpha, j, 0) - Get_X(beta, j, 0))
-    part4 = -(1 - Get_X(x, i, 2)) * (1 - Get_X(x, i, 3)) * Get_X(q, i, 0) * Get_X(alpha, i, 0)
-    part5 = -Get_X(x, i, 1) * (1 - Get_X(x, i, 0)) * Get_X(q, i, 0) * (1 - Get_X(alpha, i, 0))
+    part1 = Get_X(x, j, 0) * (1 - Get_X(x, j, 1)) * q[j, 3] * alpha[j, 3]
+    part2 = Get_X(x, j, 0) * Get_X(x, j, 1) * q[j, 1] * beta[j, 1]
+    part3 = (1 - Get_X(x, j, 0)) * Get_X(x, j, 1) * q[j, 0] * (1 - alpha[j, 0] - beta[j, 0])
+    part4 = -(1 - Get_X(x, i, 2)) * (1 - Get_X(x, i, 3)) * q[i, 0] * alpha[i, 0]
+    part5 = -Get_X(x, i, 1) * (1 - Get_X(x, i, 0)) * q[i, 0] * (1 - alpha[i, 0])
     return part1 + part2 + part3 + part4 + part5
-
 
 def q_ew_i_j(x, nd, i, j):
     q, alpha, beta = nd["q"], nd["a"], nd["b"]
-    part1 = Get_X(x, i, 2) * (1 - Get_X(x, i, 3)) * Get_X(q, i, 1) * Get_X(alpha, i, 1)
-    part2 = Get_X(x, i, 2) * Get_X(x, i, 3) * Get_X(q, i, 3) * Get_X(beta, i, 3)
-    part3 = (1 - Get_X(x, i, 2)) * Get_X(x, i, 3) * Get_X(q, i, 2) * (1 - Get_X(alpha, i, 2) - Get_X(beta, i, 2))
-    part4 = -(1 - Get_X(x, j, 0)) * (1 - Get_X(x, j, 1)) * Get_X(q, j, 2) * Get_X(alpha, j, 2)
-    part5 = -Get_X(x, j, 3) * (1 - Get_X(x, j, 2)) * Get_X(q, j, 2) * (1 - Get_X(alpha, j, 2))
+    part1 = Get_X(x, i, 2) * (1 - Get_X(x, i, 3)) * q[i, 1] * alpha[i, 1]
+    part2 = Get_X(x, i, 2) * Get_X(x, i, 3) * q[i, 3] * beta[i, 3]
+    part3 = (1 - Get_X(x, i, 2)) * Get_X(x, i, 3) * q[i, 2] * (1 - alpha[i, 2] - beta[i, 2])
+    part4 = -(1 - Get_X(x, j, 0)) * (1 - Get_X(x, j, 1)) * q[j, 2] * alpha[j, 2]
+    part5 = -Get_X(x, j, 3) * (1 - Get_X(x, j, 2)) * q[j, 2] * (1 - alpha[j, 2])
     return part1 + part2 + part3 + part4 + part5
 
+# ################################################################
+# #########################求导部分###############################
+# ################################################################
+def q_snji_pxi0(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return - (1 - Get_X(x, i, 1)) * q[i, 3] * alpha[i, 3]
+
+def q_snji_pxi1(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return Get_X(x, i, 0) * q[i, 3] * alpha[i, 3]
+
+def q_snji_pxi2(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return -Get_X(x, i, 3) * q[i, 3] * (1 - alpha[i, 3])
+
+def q_snji_pxi3(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return -Get_X(x, i, 2) * q[i, 3] * (1 - alpha[i, 3])
+
+def q_snji_pxj0(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = -(1 - Get_X(x, j, 1)) * q[j, 2] * alpha[j, 2]
+    part2 = -Get_X(x, j, 1) * q[j, 0] * beta[j, 0]
+    return part1 + part2
+
+def q_snji_pxj1(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = (1 - Get_X(x, j, 0)) * q[j, 2] * alpha[j, 2]
+    part2 = (1 - Get_X(x, j, 0)) * q[j, 0] * beta[j, 0]
+    return part1 + part2
+
+def q_snji_pxj2(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part3 = Get_X(x, j, 3) * q[j, 3] * (1 - alpha[j, 3] - beta[j, 3])
+    return part3
+
+def q_snji_pxj3(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part3 = Get_X(x, j, 2) * q[j, 3] * (1 - alpha[j, 3] - beta[j, 3])
+    return part3
+
+##################################################################
+
+def q_snij_pxi0(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part3 = Get_X(x, i, 1) * q[i, 1] * (1 - alpha[i, 1] - beta[i, 1])
+    return part3
+
+def q_snij_pxi1(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part3 = Get_X(x, i, 0) * q[i, 1] * (1 - alpha[i, 1] - beta[i, 1])
+    return part3
+
+def q_snij_pxi2(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = -(1 - Get_X(x, i, 3)) * q[i, 0] * alpha[i, 0]
+    part2 = -Get_X(x, i, 3) * q[i, 2] * beta[i, 2]
+    return part1 + part2
+
+def q_snij_pxi3(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = -(1 - Get_X(x, i, 2)) * q[i, 0] * alpha[i, 0]
+    part2 = (1 - Get_X(x, i, 2)) * q[i, 2] * beta[i, 2]
+    return part1 + part2
+
+def q_snij_pxj0(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return  -Get_X(x, j, 1) * q[j, 1] * (1 - alpha[j, 1])
+
+def q_snij_pxj1(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return -Get_X(x, j, 0) * q[j, 1] * (1 - alpha[j, 1])
+
+def q_snij_pxj2(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return  -(1 - Get_X(x, j, 3)) * q[j, 1] * alpha[j, 1]
+
+def q_snij_pxj3(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return Get_X(x, j, 2) * q[j, 1] * alpha[j, 1]
+
+#################################################################
+def q_ewji_pxi0(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return Get_X(x, i, 1) * q[i, 0] * (1 - alpha[i, 0])
+
+def q_ewji_pxi1(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return -(1 - Get_X(x, i, 0)) * q[i, 0] * (1 - alpha[i, 0])
+
+def q_ewji_pxi2(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return (1 - Get_X(x, i, 3)) * q[i, 0] * alpha[i, 0]
+
+def q_ewji_pxi3(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return  (1 - Get_X(x, i, 2)) * q[i, 0] * alpha[i, 0]
+
+def q_ewji_pxj0(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = (1 - Get_X(x, j, 1)) * q[j, 3] * alpha[j, 3]
+    part2 = Get_X(x, j, 1) * q[j, 1] * beta[j, 1]
+    part3 = -Get_X(x, j, 1) * q[j, 0] * (1 - alpha[j, 0] - beta[j, 0])
+    return part1 + part2 + part3
+
+def q_ewji_pxj1(x, nd, j, i):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = -Get_X(x, j, 0) * q[j, 3] * alpha[j, 3]
+    part2 = Get_X(x, j, 0) * q[j, 1] * beta[j, 1]
+    part3 = (1 - Get_X(x, j, 0)) * q[j, 0] * (1 - alpha[j, 0] - beta[j, 0])
+    return part1 + part2 + part3
+
+def q_ewji_pxj2(x, nd, j, i):
+    return 0
+
+def q_ewji_pxj3(x, nd, j, i):
+    return 0
+
+#################################################################
+
+def q_ewij_pxi0(x, nd, i, j):
+    return 0
+
+def q_ewij_pxi1(x, nd, i, j):
+    return 0
+
+def q_ewij_pxi2(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = (1 - Get_X(x, i, 3)) * q[i, 1] * alpha[i, 1]
+    part2 = Get_X(x, i, 3) * q[i, 3] * beta[i, 3]
+    part3 = -Get_X(x, i, 3) * q[i, 2] * (1 - alpha[i, 2] - beta[i, 2])
+    return part1 + part2 + part3
+
+def q_ewij_pxi3(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    part1 = -Get_X(x, i, 2) * q[i, 1] * alpha[i, 1]
+    part2 = Get_X(x, i, 2) * q[i, 3] * beta[i, 3]
+    part3 = (1 - Get_X(x, i, 2)) * q[i, 2] * (1 - alpha[i, 2] - beta[i, 2])
+    return part1 + part2 + part3
+
+def q_ewij_pxj0(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return (1 - Get_X(x, j, 1)) * q[j, 2] * alpha[j, 2]
+
+def q_ewij_pxj1(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return (1 - Get_X(x, j, 0)) * q[j, 2] * alpha[j, 2]
+
+def q_ewij_pxj2(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return Get_X(x, j, 3) * q[j, 2] * (1 - alpha[j, 2])
+
+def q_ewij_pxj3(x, nd, i, j):
+    q, alpha, beta = nd["q"], nd["a"], nd["b"]
+    return -(1 - Get_X(x, j, 2)) * q[j, 2] * (1 - alpha[j, 2])
+
+def q_diff(x, nd, i, j, c, road_toward, direction_str):
+    # 首先获取路的方向
+    orient = road_toward[(i,j)]["direction"]
+
+    if orient in ["east", "west"]:
+        tmp_str = "ew"
+    elif orient in ["north", "south"]:
+        tmp_str = "sn"
+
+    funcname = "q_%s%s_pxi%d"%(tmp_str,direction_str,c)
+    func = globals()[funcname]
+    return func(x, nd, i, j)
+
+# ################################################################
+# #########################求导部分###############################
+# ################################################################
 
 def Calculate_H_q(road_attributes):
     N = G.N

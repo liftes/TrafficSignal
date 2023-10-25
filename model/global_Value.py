@@ -2,7 +2,7 @@
 N = 36
 # 控制H_d中模拟连续函数的方差
 epsilon_in_Di_c = 1
-eta = 100
+eta = 0
 
 # 控制H_w中的参数
 # 允许的状态
@@ -18,7 +18,7 @@ allowed_states = [
 ]
 
 # 允许的状态
-H_w_a = 0.01
+H_w_a = 0
 
 # Bsb的初始化参数
 a_0 = 1
