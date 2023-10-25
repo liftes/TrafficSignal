@@ -151,6 +151,15 @@ def q_deriv(X, j, i, c, road_attributes):
     else:
         return 0  # Return 0 if direction is not recognized
 
+def q_deriv_mirror(X, j, i, c, road_attributes):
+    pair = (j, i)
+
+    if c in ["east", "west"]:
+        return q_ew_deriv(pair, X, road_attributes)
+    elif c in ["north", "south"]:
+        return q_sn_deriv(pair, X, road_attributes)
+    else:
+        return 0  # Return 0 if direction is not recognized
 
 def H_w_dot(X, m):
     tmp1 = energy.Calculate_H_w_i_forbsb(X)
@@ -158,7 +167,7 @@ def H_w_dot(X, m):
     if tmp2 == 0:
         return 0
     else:
-        return tmp1/tmp2
+        return G.H_w_a*tmp1/tmp2
 
 
 def X_dot(Y, i, c):
@@ -189,26 +198,32 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes):
     # Init Global variables
     a0 = G.a_0
     Ni = connected_nodes[i]
+    Ni_len = len(Ni)
     mu = X_last
     sigma = G.epsilon_in_Di_c
     M = G.allowed_states
     # Calculating individual parts of the equation
     part1 = -(a0 - a(t)) * X[c, i]
-    sum_Ni = sum([q_deriv(X[:, i], j, i, c, qdict) for j in Ni])
-    sum_Ni_q = sum([q(qdict, j, i) for j in Ni])
 
-    part2 = - sum([q_deriv(X[:, i], j, i, c, qdict) * q(qdict, j, i)
-                  for j in Ni]) * 2 / len(Ni)
-    part3 = - sum_Ni * sum_Ni_q * 2 / (len(Ni)**2)
-    part4 = (2/len(Ni) * sum([q_deriv(X[:, i], j, i,
-             c, qdict) * sum_Ni_q for j in Ni])) / len(Ni)
-    part4 = (
-        2 * sum([q_deriv(X[:, i], j, i, c, qdict) * q(qdict, j, i) for j in Ni]))
+    q_i_bar = sum([q(qdict, j, i) for j in Ni])/Ni_len
+    q_i_bar_deriv = sum([q_deriv(X[:, i], j, i, c, qdict) for j in Ni])/Ni_len
+
+    # 与中心表征节点i_0相关的导数，即汇入i_0道路的Hq项导数
+    part2 = [(2/Ni_len) * (q(qdict,j,i)-q_i_bar) * (q_deriv(X[:, i], j, i, c, qdict) - q_i_bar_deriv) for j in Ni]
+
+    # 流出中心节点i_0的导数
+    part3 = 0
+    for j0 in Ni:
+        Nj = connected_nodes[j0]
+        Nj_len = len(Nj)
+        q_j_bar = sum([q(qdict, j, j0) for j in Nj])/Nj_len
+        part3 += (2*(Nj_len-1)/(Nj**2)) * (q(qdict,i,j0)-q_j_bar) * q_deriv_mirror(X[:j0],j0,i,c,qdict)
+
     part5 = - G.eta * (X[c, i] - mu[c, i])/sigma**2 * \
         np.exp(-((X[c, i] - mu[c, i])**2)/(2*sigma**2))
     part6 = - sum([H_w_dot(X[:, i], m) for m in M])
 
-    y_dot_value = (part1 + part2 + part3 + part4 + 0.1*part5 + 0.01*part6)/G.N
+    y_dot_value = (part1 + part2 + part3 + part5 + part6)/G.N
     return y_dot_value
 
 
