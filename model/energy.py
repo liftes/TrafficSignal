@@ -440,9 +440,9 @@ def Update_traffic_flow(attributes, tmpX, road_toward):
         elif direction == "west":
             new_q[node,2] += q_ew_j_i(tmpX, attributes, node, next_node)
         elif direction == "north":
-            new_q[node,1] += q_sn_j_i(tmpX, attributes, node, next_node)
+            new_q[node,1] += q_sn_i_j(tmpX, attributes, node, next_node)
         elif direction == "south":
-            new_q[node,3] += q_sn_i_j(tmpX, attributes, node, next_node)
+            new_q[node,3] += q_sn_j_i(tmpX, attributes, node, next_node)
 
     attributes["q"] = new_q
 
