@@ -164,7 +164,7 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes, road_toward):
         np.exp(-((X[c, i] - mu[c, i])**2)/(2*sigma**2))
     part6 = - sum([H_w_dot(X[:, i], m) for m in M])
 
-    y_dot_value = (part1 + part2 + part3 + part5 + part6)/G.N
+    y_dot_value = (part1 + part2 + part3 + part5 + 1.5*part6)/G.N
     return y_dot_value
 
 
@@ -252,7 +252,7 @@ if __name__ == "__main__":
 
     best_solution, temp_data_list = SimulatedBifurcation(
         X_last, X_last, Y, road_attributes, road_attributes_last, connected_nodes, road_toward)
-    ft.Save_data(temp_data_list, "Result/SB/test_result.pkl")
+    ft.Save_data(temp_data_list, "Result/SB/test_result_without_Hw.pkl")
     ft.Save_data([best_solution, X_last], "Result/SB/test_result_X.pkl")
 
     print(best_solution)

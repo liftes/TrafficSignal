@@ -289,7 +289,7 @@ def Calculate_H_d(X_now, X_last):
     return eta * sum([D_i(i, X_now, X_last) for i in range(N)])
 
 
-def Calculate_H_d_forbsb(X_now, X_last, epsilon=G.epsilon_in_Di_c, eta=G.eta):
+def Calculate_H_d_forbsb(X_now, X_last, epsilon=G.epsilon_in_Di_c):
     """
     使用矩阵运算计算H_d
 
@@ -302,7 +302,7 @@ def Calculate_H_d_forbsb(X_now, X_last, epsilon=G.epsilon_in_Di_c, eta=G.eta):
     返回:
         H_d的值
     """
-
+    eta=G.eta
     # 计算差异矩阵
     difference_matrix = X_now - X_last
 
