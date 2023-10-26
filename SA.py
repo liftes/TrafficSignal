@@ -61,7 +61,7 @@ if __name__ == "__main__":
     _, tmpHq, tmpHd, _ = energy.H_total(road_attributes_last, X, X_last)
     kbT = tmpHd + tmpHq
     best_solution, temp_data_list = Simulated_annealing(
-        initial_temperature=1000, 
+        initial_temperature=10, 
         min_temperature=0.001, 
         cooling_rate=0.20, 
         kbT = kbT,

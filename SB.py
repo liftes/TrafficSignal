@@ -150,7 +150,7 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes, road_toward):
     q_i_bar_deriv = sum([energy.q_diff(X, qdict, j, i, c, road_toward, "ji") for j in Ni])/Ni_len
 
     # 与中心表征节点i_0相关的导数，即汇入i_0道路的Hq项导数
-    part2 = sum([(2/Ni_len) * (q(qdict,road_toward,j,i)-q_i_bar) * (energy.q_diff(X, qdict, j, i, c, road_toward, "ji") - q_i_bar_deriv) for j in Ni])
+    part2 = -sum([(2/Ni_len) * (q(qdict,road_toward,j,i)-q_i_bar) * (energy.q_diff(X, qdict, j, i, c, road_toward, "ji") - q_i_bar_deriv) for j in Ni])
 
     # 流出中心节点i_0的导数
     part3 = 0
@@ -158,7 +158,7 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes, road_toward):
         Nj = connected_nodes[j0]
         Nj_len = len(Nj)
         q_j_bar = sum([q(qdict, road_toward, j, j0) for j in Nj])/Nj_len
-        part3 += (2*(Nj_len-1)/(Nj_len**2)) * (q(qdict,road_toward,i,j0)-q_j_bar) * energy.q_diff(X, qdict, j0, i, c, road_toward, "ij")
+        part3 -= (2*(Nj_len-1)/(Nj_len**2)) * (q(qdict,road_toward,i,j0)-q_j_bar) * energy.q_diff(X, qdict, i, j0, c, road_toward, "ij")
 
     part5 = - G.eta * (X[c, i] - mu[c, i])/sigma**2 * \
         np.exp(-((X[c, i] - mu[c, i])**2)/(2*sigma**2))
@@ -188,8 +188,8 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
     parameters_record = []
 
     # Define parameters for the simulation
-    dt = 0.004  # Time step
-    iterations = 1000  # Number of iterations
+    dt = 0.005  # Time step
+    iterations = 2000  # Number of iterations
 
     # Iteratively update X and Y using Euler's method (alternating implicit scheme)
     for iteration in range(iterations):
