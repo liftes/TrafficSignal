@@ -18,7 +18,7 @@ allowed_states = [
 ]
 
 # 允许的状态
-H_w_a = 0
+H_w_a = 0.001
 
 # Bsb的初始化参数
 a_0 = 1

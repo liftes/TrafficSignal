@@ -168,7 +168,7 @@ def Y_dot(X, X_last, i, c, t, qdict, connected_nodes, road_toward):
     return y_dot_value
 
 
-def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, connected_nodes, road_toward):
+def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, connected_nodes, road_toward, iterations = 2000):
     """
     Implement ballistic simulated bifurcation.
 
@@ -189,7 +189,7 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
 
     # Define parameters for the simulation
     dt = 0.005  # Time step
-    iterations = 2000  # Number of iterations
+    # iterations = 2000  # Number of iterations
 
     # Iteratively update X and Y using Euler's method (alternating implicit scheme)
     for iteration in range(iterations):
@@ -252,7 +252,7 @@ if __name__ == "__main__":
 
     best_solution, temp_data_list = SimulatedBifurcation(
         X_last, X_last, Y, road_attributes, road_attributes_last, connected_nodes, road_toward)
-    ft.Save_data(temp_data_list, "Result/SB/test_result_without_Hw.pkl")
+    ft.Save_data(temp_data_list, "Result/SB/test_result_all.pkl")
     ft.Save_data([best_solution, X_last], "Result/SB/test_result_X.pkl")
 
     print(best_solution)

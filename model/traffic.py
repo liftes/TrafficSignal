@@ -81,7 +81,6 @@ def Initialize_road_network_random(N):
     return road_network
 
 
-
 def Generate_road_attributes(road_network, N):
     # 初始化矩阵
     left_turn_probability = [[0 for _ in range(4)] for _ in range(N)]
