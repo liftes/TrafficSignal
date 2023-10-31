@@ -9,5 +9,6 @@
 *.blg
 *.gz
 *.pyc
+*.csv
 
 build/
