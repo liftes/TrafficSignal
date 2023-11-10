@@ -22,7 +22,8 @@ def Time_sequential_optimization(num_time_steps):
     resultH = np.zeros((2,num_time_steps))
     # 初始状态设置
     G.N = 100
-    X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = gv.InitAll() # 使用实际数据时，这里只需要给出connected_nodes, road_toward，然后随机化X和X_last
+    # X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = gv.InitAll() # 使用实际数据时，这里只需要给出connected_nodes, road_toward，然后随机化X和X_last
+    X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = gv.InitializeRoadNetwork()
     X_copy = copy.deepcopy(X)
 
     for time_step in range(num_time_steps):

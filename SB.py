@@ -216,7 +216,7 @@ def SimulatedBifurcation(X, X_last, Y, road_attributes, road_attributes_last, co
             road_attributes, X, X_last)
         current_h_list = {"Hq": hq, "Hd": hd, "Hw": hw}
 
-        print(current_energy, current_h_list, iteration)
+        # print(current_energy, current_h_list, iteration)
         # Append the parameters to the record
         parameters_record.append({
             "iteration": iteration,

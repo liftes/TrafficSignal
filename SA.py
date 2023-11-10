@@ -48,7 +48,7 @@ def Simulated_annealing(initial_temperature, min_temperature, cooling_rate, kbT,
             "X": copy.deepcopy(X)
         })
 
-        print(current_energy, current_h_list, temperature)
+        # print(current_energy, current_h_list, temperature)
 
         # 更新温度
         temperature = temperature * (1 - cooling_rate)
