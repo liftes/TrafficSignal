@@ -1,4 +1,7 @@
 from . import global_Value as G
+import drawwithplt as Dplt
+from drawwithplt import plt
+Dplt.plt.style.use(["science", "grid"])
 
 import random
 import numpy as np
@@ -460,7 +463,29 @@ def visualize_simplified_network(intersection_dict, adjacency_matrix):
     for idx, point in intersection_dict.items():
         ax.plot(point[0], point[1], 'o', markersize=5, color='blue')
 
-    plt.show()
+
+
+def remove_zero_degree_nodes(adjacency_matrix, location_dict):
+    # 找到所有度数不为0的节点索引
+    non_zero_degree_node_indices = np.where(adjacency_matrix.getnnz(1) > 0)[0]
+    
+    # 删除度数为0的节点对应的行和列
+    adjacency_matrix = adjacency_matrix[non_zero_degree_node_indices, :][:, non_zero_degree_node_indices]
+
+    # 创建一个新的字典来存储更新后的位置信息
+    new_location_dict = {}
+
+    # 创建一个映射表来映射旧索引到新索引
+    index_mapping = {old_index: new_index for new_index, old_index in enumerate(non_zero_degree_node_indices)}
+
+    # 更新location_dict
+    for old_index, location in location_dict.items():
+        # 使用映射表更新字典的键，如果旧索引不在映射表中，说明它是一个0度节点，不应该被包含在新的字典中
+        if old_index in index_mapping:
+            new_location_dict[index_mapping[old_index]] = location
+
+    return adjacency_matrix, new_location_dict
+
 
 
 def InitializeRoadNetwork(shapefile_path='./Data/Network/Network_Final_Y2022.shp', x_min=490000, y_min=302000, x_max=495000, y_max=305000):
@@ -469,6 +494,11 @@ def InitializeRoadNetwork(shapefile_path='./Data/Network/Network_Final_Y2022.shp
 
     # 创建路网网络
     intersection_dict, adjacency_matrix = create_road_network(intersections, roads_within_bbox)
+
+    adjacency_matrix, intersection_dict = remove_zero_degree_nodes(adjacency_matrix, intersection_dict)
+
+    # Correct usage of the function
+    # visualize_simplified_network(intersection_dict, adjacency_matrix)
 
     # 提取参数
     X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = extract_parameters(adjacency_matrix, intersection_dict)
