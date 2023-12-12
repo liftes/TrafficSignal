@@ -505,6 +505,23 @@ def InitializeRoadNetwork(shapefile_path='./Data/Network/Network_Final_Y2022.shp
 
     return X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward
 
+def InitializeRoadNetwork_ForFigure(shapefile_path='./Data/Network/Network_Final_Y2022.shp', x_min=490000, y_min=302000, x_max=495000, y_max=305000):
+    # 提取交叉点和边界框内的路网
+    intersections, roads_within_bbox = extract_intersections_and_roads(shapefile_path, x_min, y_min, x_max, y_max)
+
+    # 创建路网网络
+    intersection_dict, adjacency_matrix = create_road_network(intersections, roads_within_bbox)
+
+    adjacency_matrix, intersection_dict = remove_zero_degree_nodes(adjacency_matrix, intersection_dict)
+
+    # Correct usage of the function
+    # visualize_simplified_network(intersection_dict, adjacency_matrix)
+
+    # 提取参数
+    # X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = extract_parameters(adjacency_matrix, intersection_dict)
+
+    return adjacency_matrix, intersection_dict
+
 # 现在您可以调用此函数并获取所需的变量
 # X, X_last, road_attributes, road_attributes_last, connected_nodes, road_toward = InitializeRoadNetwork()
 
