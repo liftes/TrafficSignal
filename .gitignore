@@ -10,5 +10,6 @@
 *.gz
 *.pyc
 *.csv
+*.zip
 
 build/
